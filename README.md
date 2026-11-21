@@ -38,6 +38,7 @@ ios-clipboard-keyboard/
 ├── scripts
 │   ├── install.sh                     # Compila e instala en el iPhone conectado
 │   └── make_ipa.sh                    # Genera un .ipa para AltStore/Sideloadly
+├── Instalar.command                   # Doble click: instalación guiada en el Mac
 ├── .github/workflows/build-ipa.yml    # Botón "Run workflow" que compila el .ipa
 └── SETUP.md                           # Instalación paso a paso
 ```
@@ -52,6 +53,9 @@ ios-clipboard-keyboard/
    con tu Apple ID y se instala en el iPhone.
 
 ### Opción 2 — un comando en el Mac (iPhone conectado por cable)
+
+Doble click en **`Instalar.command`** desde el Finder: te pide el Team ID y el prefijo,
+compila, firma e instala. O en la terminal:
 
 ```bash
 DEVELOPMENT_TEAM=ABCDE12345 BUNDLE_ID_PREFIX=com.tunombre ./scripts/install.sh
