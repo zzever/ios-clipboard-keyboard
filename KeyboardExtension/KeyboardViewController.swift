@@ -81,6 +81,11 @@ class KeyboardViewController: UIInputViewController {
         emojiView.isHidden = panel != .emoji
         clipboardHistoryView.isHidden = panel != .clipboard
         if panel == .clipboard {
+            // Refrescar por si el portapapeles cambió mientras el teclado estaba abierto
+            if hasFullAccess {
+                ClipboardManager.shared.captureSystemClipboard()
+            }
+            ClipboardManager.shared.reloadFromStorage()
             clipboardHistoryView.reload()
         }
     }

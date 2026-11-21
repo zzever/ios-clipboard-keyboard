@@ -1,11 +1,43 @@
 import Foundation
 import UIKit
 
-// Compartir datos entre app contenedora y extensión via App Groups
-// Configura tu propio App Group en Xcode: Signing & Capabilities → App Groups
-let appGroupIdentifier = "group.com.tuempresa.clipboardkeyboard"
+// Almacenamiento del historial.
+//
+// Por defecto se usa el UserDefaults de la propia extensión: no requiere cuenta
+// de desarrollador de pago y el teclado (que es quien captura y muestra el
+// historial) funciona igual.
+//
+// Para compartir el historial con la app contenedora, define el build setting
+// CLIPBOARD_APP_GROUP (por ejemplo group.com.tuempresa.clipboardkeyboard),
+// activa los .entitlements de ambos targets y registra el App Group en tu
+// cuenta de desarrollador. Ver SETUP.md.
 let clipboardHistoryKey = "clipboard_history"
 let maxHistoryItems = 20
+
+enum ClipboardStorage {
+    private static let appGroupInfoKey = "ClipboardAppGroup"
+
+    /// App Group realmente disponible en runtime (nil si no hay o no está firmado).
+    /// `containerURL(forSecurityApplicationGroupIdentifier:)` devuelve nil cuando el
+    /// perfil de firma no incluye el grupo, así que sirve como comprobación real.
+    static var appGroupIdentifier: String? {
+        guard let raw = Bundle.main.object(forInfoDictionaryKey: appGroupInfoKey) as? String else {
+            return nil
+        }
+        let name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, !name.contains("$"),
+              FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: name) != nil
+        else { return nil }
+        return name
+    }
+
+    static var defaults: UserDefaults {
+        if let name = appGroupIdentifier, let shared = UserDefaults(suiteName: name) {
+            return shared
+        }
+        return .standard
+    }
+}
 
 class ClipboardManager {
     static let shared = ClipboardManager()
@@ -62,15 +94,13 @@ class ClipboardManager {
     // MARK: - Persistencia via App Groups (UserDefaults compartido)
 
     private func saveHistory() {
-        guard let defaults = UserDefaults(suiteName: appGroupIdentifier) else { return }
         if let data = try? JSONEncoder().encode(history) {
-            defaults.set(data, forKey: clipboardHistoryKey)
+            ClipboardStorage.defaults.set(data, forKey: clipboardHistoryKey)
         }
     }
 
     private func loadHistory() {
-        guard let defaults = UserDefaults(suiteName: appGroupIdentifier),
-              let data = defaults.data(forKey: clipboardHistoryKey),
+        guard let data = ClipboardStorage.defaults.data(forKey: clipboardHistoryKey),
               let decoded = try? JSONDecoder().decode([ClipboardItem].self, from: data)
         else { return }
         history = decoded
@@ -83,5 +113,10 @@ class ClipboardManager {
         if let text = UIPasteboard.general.string, !text.isEmpty {
             add(text: text)
         }
+    }
+
+    /// Vuelve a leer el historial guardado (por si otra instancia lo modificó)
+    func reloadFromStorage() {
+        loadHistory()
     }
 }

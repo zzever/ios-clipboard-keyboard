@@ -1,0 +1,40 @@
+name: Build IPA
+
+# Botón "Run workflow" en la pestaña Actions: compila en un Mac de GitHub y
+# deja el .ipa listo para descargar. No necesitas Mac ni Xcode en casa.
+on:
+  workflow_dispatch:
+    inputs:
+      bundle_id_prefix:
+        description: "Prefijo de Bundle ID (único en tu cuenta, ej. com.tunombre)"
+        required: false
+        default: "com.example"
+
+permissions:
+  contents: read
+
+jobs:
+  ipa:
+    name: Generar .ipa
+    runs-on: macos-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Xcode disponible
+        run: xcodebuild -version
+
+      - name: Compilar .ipa
+        env:
+          BUNDLE_ID_PREFIX: ${{ inputs.bundle_id_prefix }}
+        run: ./scripts/make_ipa.sh
+
+      - name: Subir .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClipboardKeyboard-ipa
+          path: build/ClipboardKeyboard.ipa
+          if-no-files-found: error
+          retention-days: 30
